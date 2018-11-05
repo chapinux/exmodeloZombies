@@ -52,6 +52,7 @@ hh <-  subset(dfHumans, select = c(1:22,26,30))
 dfHumanslong <- data.frame()
 dfHumanslong <-   do.call("rbind", apply(hh,1,longformatter ))
 rm(hh)
+rm(dfHumans)
 
 
 
@@ -59,6 +60,7 @@ zz <-  subset(dfZombies, select=c(1:22,26,30))
 dfZombieslong <-  data.frame()
 dfZombieslong <-  do.call("rbind", apply(zz,1,longformatter))
 rm(zz)
+rm(dfZombies)
 
 
 
@@ -74,20 +76,24 @@ pz1 <-  ggplot(dfZombieslong, aes(x=stepnumber, y=value, group=seed, color=param
   scale_colour_viridis_c()
 pz1
 
-xx <-  inner_join(dfZombieslong, uniqueParam)
-names(xx)
 
 
-pp <-  ggplot(head(xx,nrow(xx)/4), aes(x=stepnumber, y=value, group=seed, color=nomTime))+
-geom_line()+
-  scale_colour_viridis_c()
-pp
-
-pp <-  ggplot(sample_n(xx,200000), aes(x=stepnumber, y=value,  color=nomBoost))+
-  geom_jitter(size=0.3)+
-  scale_colour_viridis_c()
-pp
-
+# 
+# 
+# xx <-  inner_join(dfZombieslong, uniqueParam)
+# names(xx)
+# 
+# 
+# pp <-  ggplot(head(xx,nrow(xx)/4), aes(x=stepnumber, y=value, group=seed, color=nomTime))+
+# geom_line()+
+#   scale_colour_viridis_c()
+# pp
+# 
+# pp <-  ggplot(sample_n(xx,200000), aes(x=stepnumber, y=value,  color=nomBoost))+
+#   geom_jitter(size=0.3)+
+#   scale_colour_viridis_c()
+# pp
+# 
 
 
 
@@ -100,34 +106,136 @@ medmeanH <-  dfHumanslong %>%  group_by(paramID, stepnumber) %>% summarise(med=m
 medmeanH <-  inner_join(medmeanH, uniqueParam)
 medmeanZ <-  inner_join(medmeanZ, uniqueParam)
 
-names(medmean)
+names(medmeanZ)
 
 
 
 
 
 
+paramNames <- c("nomBoost","nomTime","panicDuration","zombieAcuteness","zombieLifespan","zombieSpeedFactor")
+paramindex <-  seq(6,11)
 
+#
 
-
-
-ppmed <-  ggplot(medmeanZ, aes(x=stepnumber, y=med, group=paramID, color=(gzugzu[,6])))+
-  geom_line(size=0.2)+
-  labs(title = "Dusk of the Dead", x = "step", y = "Zombies population\n (median over replications)")+
+generateZombiesPlotsOverParams <- function(pIndex) {
+  
+  lili <-  as.data.frame(medmeanZ[,paramindex[pIndex]])[,1]
+  currentparamName <-  paramNames[pIndex]
+  cat(pIndex,":",currentparamName,"\n")
+  
+  
+  ppmed <-  ggplot(medmeanZ, aes(x=stepnumber, y=med, group=paramID, color=lili))+
+  geom_line(size=0.4, alpha=0.8)+
+  labs(title = "Rise and Fall of the Undead", x = "step", y = "Zombies population\n (median over replications)", color=currentparamName)+
   scale_colour_viridis_c()
-ppmed
 
-ppmean <-  ggplot(medmeanZ, aes(x=stepnumber, y=moy, group=paramID, color=paramID))+
-  geom_line(size=0.2)+
-  labs(title = "Dusk of the Dead", x = "step", y = "Zombies population\n (mean over replications)")+
+fifiname <-  paste0("ZombiesMedian_",currentparamName,".png")
+ggsave(fifiname)
+
+ppmean <-  ggplot(medmeanZ, aes(x=stepnumber, y=moy, group=paramID,color=lili))+
+  geom_line(size=0.4, alpha=0.8)+
+  labs(title = "Rise and Fall of the Undead", x = "step", y = "Zombies population\n (mean over replications)", color=currentparamName)+
   scale_colour_viridis_c()
 ppmean
+fifiname <-  paste0("ZombiesMean_",currentparamName,".png")
+ggsave(fifiname)
 
-ppsd <-  ggplot(medmeanZ, aes(x=stepnumber, y=sd, group=paramID, color=paramID))+
-  geom_line(size=0.2)+
-  labs(title = "Dusk of the Dead", x = "step", y = "Zombies population\n (standard deviation over replications)")+
+
+ppsd <-  ggplot(medmeanZ, aes(x=stepnumber, y=sd, group=paramID,color=lili))+
+  geom_line(size=0.4, alpha=0.8)+
+  labs(title = "Rise and Fall of the Undead", x = "step", y = "Zombies population\n (standard deviation over replications)", color=currentparamName)+
   scale_colour_viridis_c()
-ppsd
+fifiname <-  paste0("ZombiesSD_",currentparamName,".png")
+ggsave(fifiname)
+}
+
+generateHumansPlotsOverParams <- function(pIndex) {
+  
+  lili <-  as.data.frame(medmeanH[,paramindex[pIndex]])[,1]
+  currentparamName <-  paramNames[pIndex]
+  cat(pIndex,":",currentparamName,"\n")
+  
+  
+  ppmed <-  ggplot(medmeanH, aes(x=stepnumber, y=med, group=paramID, color=lili))+
+    geom_line(size=0.4, alpha=0.8)+
+    labs(title = "Humans Doom", x = "step", y = "Human population\n (median over replications)", color=currentparamName)+
+    scale_colour_viridis_c()
+  
+  fifiname <-  paste0("HumansMedian",currentparamName,".png")
+  ggsave(fifiname)
+  
+  ppmean <-  ggplot(medmeanH, aes(x=stepnumber, y=moy, group=paramID,color=lili))+
+    geom_line(size=0.4, alpha=0.8)+
+    labs(title = "Humans Doom", x = "step", y = "HUmans population\n (mean over replications)", color=currentparamName)+
+    scale_colour_viridis_c()
+  ppmean
+  fifiname <-  paste0("HumansMean",currentparamName,".png")
+  ggsave(fifiname)
+  
+  
+  ppsd <-  ggplot(medmeanH, aes(x=stepnumber, y=sd, group=paramID,color=lili))+
+    geom_line(size=0.4, alpha=0.8)+
+    labs(title = "Humans Doom", x = "step", y = "Humans population\n (standard deviation over replications)", color=currentparamName)+
+    scale_colour_viridis_c()
+  fifiname <-  paste0("HumansSD_",currentparamName,".png")
+  ggsave(fifiname)
+}
 
 
+
+
+
+# generation des plots 
+sapply(1:6, generateZombiesPlotsOverParams)
+sapply(1:6, generateHumansPlotsOverParams)
+
+
+
+
+#boxplot par paramID
+rm(df)
+names(dfHumanslong)
+
+
+displayTrajByID <-function(id){
+zz <-  dfHumanslong %>% filter(paramID==id)
+ppp <-  ggplot(zz, aes(x=stepnumber,y=value))+
+  geom_boxplot(aes(group=stepnumber), outlier.alpha = 0.5)+
+  labs(title = "", x = "step", y = "Human population\n (boxplot over replications)")
+print(ppp)
+}
+displayTrajByID(55)
+
+
+# 10 premiers paramétrages à la somme des écarts types pendant la simu minimale 
+id25LowSD <- medmeanH %>% group_by(paramID) %>% summarise(sumsd= sum(sd)) %>%  arrange((sumsd)) %>% head(25)
+
+
+sumSDbiParamID_H <-  medmeanH %>% group_by(paramID) %>% summarise(sumsd= sum(sd)) 
+
+uniqueParam$sumSD_H <-  sumSDbiParamID$sumsd
+names(uniqueParam)
+
+p1p2 <-  ggplot(uniqueParam, aes(x=nomBoost, y=nomTime, color=sumSD_H))+
+  geom_point()+
+  scale_color_viridis_c(direction=-1)
+p1p2
+
+p3p4 <-  ggplot(uniqueParam, aes(x=panicDuration, y=zombieAcuteness, color=sumSD_H))+
+  geom_point()+
+  scale_color_viridis_c(direction = -1)
+p3p4
+
+
+p5p6 <-  ggplot(uniqueParam, aes(x=zombieLifespan, y=zombieSpeedFactor, color=sumSD_H))+
+  geom_point()+
+  scale_color_viridis_c(direction = -1)
+p5p6
+
+
+p3p6 <-  ggplot(uniqueParam, aes(x=panicDuration, y=zombieSpeedFactor, color=sumSD_H))+
+  geom_point()+
+  scale_color_viridis_c(direction = -1)
+p3p6
 
