@@ -11,14 +11,17 @@ setwd("~/dev/exmodeloZombies/")
 df <-  read_csv("replications_1000.csv")
 names(df)
 dfParams <-  subset(df, select = c(23:29))
-
-
 ##Identification of unique parameterization 
 
 #SIMULATION seed vary from a replication to another -> removed before unique() 
 uniqueParam <- unique(dfParams[,-4])
 uniqueParam$paramID <-  1:200
 uniqueParam <-  as.data.frame(uniqueParam)
+
+dfZombieslong <-  read_csv("ZombiePopulation.csv")
+dfHumanslong <-  read_csv("HumanPopulation.csv")
+names(dfZombieslong)
+
 
 #JOIN uniqueParam with df then split into human history records and zombies history records
 dfHumans  <- subset(df,select = c(1:29))
@@ -64,6 +67,11 @@ rm(dfZombies)
 
 
 
+write.csv(dfZombieslong, "ZombiePopulation.csv")
+write.csv(dfHumanslong, "HumanPopulation.csv")
+
+
+
 ph1 <-  ggplot(dfHumanslong, aes(x=stepnumber, y=value, group=seed, color=paramID) )+
   geom_line()+
   scale_color_viridis_c()
@@ -71,10 +79,21 @@ ph1
 
 
 
-pz1 <-  ggplot(dfZombieslong, aes(x=stepnumber, y=value, group=seed, color=paramID))+
+pz1 <-  ggplot(dfZombieslong , aes(x=stepnumber, y=value, group=seed, color=paramID))+
   geom_line()+
   scale_colour_viridis_c()
 pz1
+
+
+#trajectoires à plateaux 
+
+
+
+tutu <- dfZombieslong%>% filter(between(paramID, 76, 90))
+piou <-  ggplot(tutu , aes(x=stepnumber, y=value, group=seed, color=paramID))+
+  geom_line()+
+  scale_colour_viridis_c()
+piou
 
 
 
@@ -208,18 +227,18 @@ print(ppp)
 displayTrajByID(55)
 
 
-# 10 premiers paramétrages à la somme des écarts types pendant la simu minimale 
+# 10 premiers paramétrages à la somme des écarts types  la simu minimale 
 id25LowSD <- medmeanH %>% group_by(paramID) %>% summarise(sumsd= sum(sd)) %>%  arrange((sumsd)) %>% head(25)
 
+#somme des sd le long de la simu
+sumSDbyParamID_H <-  medmeanH %>% group_by(paramID) %>% summarise(sumsd= sum(sd)) 
+uniqueParam$sumSD_H <-  sumSDbyParamID_H$sumsd
+gaga <- uniqueParam %>% select(-paramID) %>% melt(id.vars=c("sumSD_H")) 
 
-sumSDbiParamID_H <-  medmeanH %>% group_by(paramID) %>% summarise(sumsd= sum(sd)) 
-
-uniqueParam$sumSD_H <-  sumSDbiParamID$sumsd
-names(uniqueParam)
-
-p1p2 <-  ggplot(uniqueParam, aes(x=nomBoost, y=nomTime, color=sumSD_H))+
+p1p2 <-  ggplot(gaga, aes(x=sumSD_H, y=value))+
   geom_point()+
-  scale_color_viridis_c(direction=-1)
+  scale_color_viridis_c()+
+  facet_wrap(~variable,scales = 'free')
 p1p2
 
 p3p4 <-  ggplot(uniqueParam, aes(x=panicDuration, y=zombieAcuteness, color=sumSD_H))+
@@ -238,4 +257,6 @@ p3p6 <-  ggplot(uniqueParam, aes(x=panicDuration, y=zombieSpeedFactor, color=sum
   geom_point()+
   scale_color_viridis_c(direction = -1)
 p3p6
+
+
 
